@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FW-WeinScan — Prozessablauf Büro &amp; Lager (WENN • JA • NEIN • DSGVO)</title>
+<style>
+  :root {
+    --burgundy: #6b1d2f;
+    --burgundy-dark: #4a1220;
+    --burgundy-soft: #f7eef1;
+    --gold: #c59b27;
+    --canvas-bg: #f4f1ea;
+    --grid-dot: #d2c9bc;
+    --card-bg: #ffffff;
+    --card-bd: #d5ccc0;
+    --text: #0f172a;
+    --muted: #526071;
+    --true: #15803d;
+    --true-soft: #ecfdf5;
+    --false: #b91c1c;
+    --false-soft: #fef2f2;
+    --warn: #b45309;
+    --warn-soft: #fffbeb;
+    --ai: #1d4ed8;
+    --ai-soft: #eff6ff;
+    --teal: #0f766e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--canvas-bg);
+    color: var(--text);
+    user-select: none;
+  }
+
+  /* Top Control Bar */
+  .topbar {
+    height: 56px;
+    background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 100%);
+    border-bottom: 3px solid var(--gold);
+    color: #ffffff;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+    z-index: 50;
+    box-shadow: 0 3px 12px rgba(30, 15, 20, 0.18);
+  }
+  .brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(197, 155, 39, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .brand-kicker {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .brand-title {
+    font-size: 13.8px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .scenarios {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow-x: auto;
+    min-width: 0;
+    padding: 4px 0;
+  }
+  .sc-btn {
+    background: rgba(255, 255, 255, 0.13);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 11.3px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .sc-btn:hover { background: rgba(255, 255, 255, 0.24); }
+  .sc-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #1c1104;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
+
+  /* Secondary Toolbar */
+  .subbar {
+    height: 40px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--card-bd);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    position: relative;
+    z-index: 45;
+  }
+  .stage-jumps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .jump-lbl {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 2px;
+  }
+  .jump-btn {
+    background: var(--canvas-bg);
+    border: 1px solid var(--card-bd);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .jump-btn:hover {
+    border-color: var(--burgundy);
+    color: var(--burgundy);
+    background: var(--burgundy-soft);
+  }
+
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .z-btn {
+    background: #ffffff;
+    border: 1px solid var(--card-bd);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11.8px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .z-btn:hover { background: var(--canvas-bg); }
+  .z-btn.toggle-on {
+    background: var(--burgundy-soft);
+    border-color: var(--burgundy);
+    color: var(--burgundy);
+  }
+  .z-pct {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--muted);
+    min-width: 42px;
+    text-align: center;
+  }
+
+  /* Main Viewport = Canvas + Right Inspector */
+  .main-area {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 96px);
+    display: flex;
+  }
+
+  .viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+    background-color: var(--canvas-bg);
+    background-image: radial-gradient(var(--grid-dot) 1.3px, transparent 1.3px);
+    background-size: 24px 24px;
+  }
+  .viewport.panning { cursor: grabbing; }
+
+  .world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6500px;
+    height: 1220px;
+    transform-origin: 0 0;
+  }
+
+  /* Swimlane Zones */
+  .zone {
+    position: absolute;
+    border: 1.8px dashed #c8bdb0;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.46);
+    pointer-events: none;
+  }
+  .zone-title {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--burgundy);
+    background: #f8eff1;
+    border: 1px solid #d9bec6;
+    padding: 4px 11px;
+    border-radius: 6px;
+  }
+
+  /* SVG Wires Layer */
+  svg#wires {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6500px;
+    height: 1220px;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .wire-path {
+    fill: none;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: opacity 0.22s, stroke-width 0.18s;
+  }
+  .wire-path.dim { opacity: 0.12; }
+  .wire-path.active-flow {
+    stroke-width: 4.0;
+    stroke-dasharray: 10 6;
+    animation: flowDash 0.85s linear infinite;
+  }
+  @keyframes flowDash {
+    to { stroke-dashoffset: -32; }
+  }
+
+  .wire-badge {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  /* Quadratisch • Praktisch • Gut Node Card */
+  .node {
+    position: absolute;
+    width: 244px;
+    background: var(--card-bg);
+    border: 1.8px solid var(--card-bd);
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s, opacity 0.22s;
+    z-index: 10;
+  }
+  .node:hover {
+    box-shadow: 0 7px 18px rgba(107, 29, 47, 0.14);
+    border-color: #b1939c;
+    z-index: 15;
+  }
+  .node.selected {
+    border-color: var(--burgundy) !important;
+    box-shadow: 0 0 0 3px rgba(107, 29, 47, 0.25), 0 8px 20px rgba(15, 23, 42, 0.12);
+    z-index: 20;
+  }
+  .node.dim { opacity: 0.2; }
+  .node.hi {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.45), 0 6px 16px rgba(15, 23, 42, 0.1);
+    z-index: 18;
+  }
+
+  .node-top {
+    padding: 7px 10px 6px 10px;
+    border-bottom: 1px solid #ede8e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px 8px 0 0;
+  }
+  .n-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+  .type-trigger .n-icon { background: var(--burgundy); }
+  .type-ai .n-icon { background: var(--ai); }
+  .type-if .n-icon { background: #6d28d9; }
+  .type-switch .n-icon { background: var(--teal); }
+  .type-action .n-icon { background: var(--true); }
+  .type-stop .n-icon { background: var(--false); }
+  .type-warn .n-icon { background: var(--warn); }
+  .type-audit .n-icon { background: #334155; }
+
+  .type-stop { border-color: #eea9a9; background: #fffafa; }
+  .type-warn { border-color: #ebd094; background: #fffdf7; }
+  .type-action { border-color: #b2dfc0; }
+
+  .n-kicker {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    line-height: 1.1;
+  }
+  .n-title {
+    font-size: 12.1px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 190px;
+  }
+
+  .node-body {
+    padding: 7px 10px 8px 10px;
+    font-size: 11px;
+    color: #334155;
+    line-height: 1.3;
+    position: relative;
+  }
+
+  /* Input / Output Ports */
+  .port-in {
+    position: absolute;
+    left: -7px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2.5px solid #475569;
+  }
+
+  .ports-out {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px dashed #e2dcd2;
+  }
+  .port-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 4px;
+    min-height: 17px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .port-dot {
+    position: absolute;
+    right: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2.5px solid #475569;
+  }
+  .p-true { color: var(--true); }
+  .p-true .port-dot { border-color: var(--true); background: var(--true-soft); }
+  .p-false { color: var(--false); }
+  .p-false .port-dot { border-color: var(--false); background: var(--false-soft); }
+  .p-warn { color: var(--warn); }
+  .p-warn .port-dot { border-color: var(--warn); background: var(--warn-soft); }
+  .p-ai { color: var(--ai); }
+  .p-ai .port-dot { border-color: var(--ai); background: var(--ai-soft); }
+  .p-teal { color: var(--teal); }
+  .p-teal .port-dot { border-color: var(--teal); background: #f0fdfa; }
+
+  /* Right Inspector Drawer */
+  .inspector {
+    width: 345px;
+    background: #ffffff;
+    border-left: 1px solid var(--card-bd);
+    display: flex;
+    flex-direction: column;
+    z-index: 40;
+    box-shadow: -4px 0 18px rgba(15, 23, 42, 0.06);
+  }
+  .insp-head {
+    padding: 13px 15px;
+    background: var(--burgundy-soft);
+    border-bottom: 1px solid #e2cdd4;
+  }
+  .insp-kicker {
+    font-size: 9.8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--burgundy);
+    margin-bottom: 3px;
+  }
+  .insp-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+  }
+  .insp-scroll {
+    padding: 13px 15px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .iblock-lbl {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .iblock-box {
+    background: var(--canvas-bg);
+    border: 1px solid var(--card-bd);
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 12.2px;
+    color: #1e293b;
+    line-height: 1.42;
+    user-select: text;
+  }
+  .iblock-screen {
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #0f172a;
+    color: #f8fafc;
+    user-select: text;
+  }
+  .iblock-screen.ok { background: #14532d; color: #f0fdf4; }
+  .iblock-screen.err { background: #7f1d1d; color: #fef2f2; }
+  .iblock-screen.warn { background: #78350f; color: #fffbeb; }
+
+  .insp-foot {
+    padding: 9px 15px;
+    border-top: 1px solid var(--card-bd);
+    background: #fcfbfa;
+    font-size: 10.8px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-wrap">
+    <div class="brand-logo">🍷</div>
+    <div>
+      <div class="brand-kicker">Fellbacher Weingärtner eG &bull; Warenausgangskontrolle (DSGVO)</div>
+      <div class="brand-title">FW-WeinScan Prozessablauf (Prüfung: JA / NEIN)</div>
+    </div>
+  </div>
+
+  <div class="scenarios" id="scenarioBar">
+    <button class="sc-btn active" data-sc="all">Gesamtablauf</button>
+    <button class="sc-btn" data-sc="happy">1. Normalablauf (OK &rarr; Geprüft)</button>
+    <button class="sc-btn" data-sc="import_err">2. PDF-Fehler (Büro)</button>
+    <button class="sc-btn" data-sc="scan_err">3. Scan-Schutz (Fehlgriff)</button>
+    <button class="sc-btn" data-sc="fehlmenge">4. Fehlbestand &rarr; Neues PDF</button>
+    <button class="sc-btn" data-sc="storno_reset">5. Korrektur / Ohne EAN / Übergabe</button>
+  </div>
+</header>
+
+<div class="subbar">
+  <div class="stage-jumps">
+    <span class="jump-lbl">Bereich:</span>
+    <button class="jump-btn" onclick="focusArea(15, 10, 0.68)">1. E-Mail &amp; PDF-Einlesen (DSGVO)</button>
+    <button class="jump-btn" onclick="focusArea(2160, 10, 0.76)">2. Kategorien &amp; QR-Code</button>
+    <button class="jump-btn" onclick="focusArea(3270, 10, 0.58)">3. Scan-Kontrolle (JA / NEIN)</button>
+    <button class="jump-btn" onclick="focusArea(2460, 680, 0.66)">4. Sonderfälle &amp; Ohne Barcode</button>
+    <button class="jump-btn" onclick="focusArea(5400, 10, 0.66)">5. Abschluss &amp; Archiv</button>
+  </div>
+  <div class="zoom-controls">
+    <button class="z-btn" id="dragToggle" onclick="toggleDragMode()">Karten fixiert</button>
+    <button class="z-btn" onclick="resetSavedLayout()" title="Standard-Raster wiederherstellen">Raster-Reset</button>
+    <button class="z-btn" onclick="zoomStep(-0.12)">&minus;</button>
+    <span class="z-pct" id="zoomPct">60%</span>
+    <button class="z-btn" onclick="zoomStep(0.12)">+</button>
+    <button class="z-btn" onclick="setView(18, 24, 1)">100%</button>
+    <button class="z-btn" onclick="fitAll()">Alles zeigen</button>
+  </div>
+</div>
+
+<div class="main-area">
+  <div class="viewport" id="viewport">
+    <div class="world" id="world">
+
+      <!-- Stage Swimlanes -->
+      <div class="zone" style="left:25px; top:18px; width:2125px; height:690px;">
+        <div class="zone-title">1. E-Mail-Eingang &amp; Lokale PDF-Prüfung (DSGVO-konform im eigenen Konto • Ohne externe KI)</div>
+      </div>
+      <div class="zone" style="left:2175px; top:18px; width:1085px; height:690px;">
+        <div class="zone-title">2. Logistik-Kategorien, Tagesliste &amp; Start per QR-Code</div>
+      </div>
+      <div class="zone" style="left:3285px; top:18px; width:2525px; height:690px;">
+        <div class="zone-title">3. Pick-by-Scan Kontrolle im Lager (Jeder Scan: WENN / JA / NEIN)</div>
+      </div>
+      <div class="zone" style="left:2175px; top:730px; width:3635px; height:430px; border-color:#d8bc88; background:rgba(255,251,235,0.52);">
+        <div class="zone-title" style="color:#92400e; background:#fef3c7; border-color:#f59e0b;">4. Sonderfälle, Fasswein ohne Barcode (KEG), Fehlbestand &amp; Übergabe</div>
+      </div>
+      <div class="zone" style="left:5835px; top:18px; width:415px; height:1142px;">
+        <div class="zone-title">5. Freigabe, Prüfprotokoll &amp; Archiv</div>
+      </div>
+
+      <!-- SVG Wires -->
+      <svg id="wires">
+        <defs>
+          <marker id="arr-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#64748b"/>
+          </marker>
+          <marker id="arr-true" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#15803d"/>
+          </marker>
+          <marker id="arr-false" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#b91c1c"/>
+          </marker>
+          <marker id="arr-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#b45309"/>
+          </marker>
+          <marker id="arr-ai" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#1d4ed8"/>
+          </marker>
+          <marker id="arr-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#0f766e"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <!-- Nodes Layer -->
+      <div id="nodesLayer"></div>
+    </div>
+  </div>
+
+  <!-- Inspector Drawer -->
+  <aside class="inspector">
+    <div class="insp-head">
+      <div class="insp-kicker">Detail-Erklärung (Klick auf Karte)</div>
+      <div class="insp-title" id="inspTitle">Prozessschritt auswählen</div>
+    </div>
+    <div class="insp-scroll">
+      <div>
+        <div class="iblock-lbl">Aufgabe im Ablauf</div>
+        <div class="iblock-box" id="inspRole">Der Ablaufplan zeigt den gesamten Weg vom PACKSCHEIN aus WISPremium bis zur geprüften Verladung im Lager.</div>
+      </div>
+      <div>
+        <div class="iblock-lbl">Entscheidungsregel (WENN / JA / NEIN)</div>
+        <div class="iblock-box" id="inspLogic">Wählen Sie oben einen der 5 Abläufe aus, um den Weg farbig hervorzuheben.</div>
+      </div>
+      <div>
+        <div class="iblock-lbl">Anzeige auf Gerät / E-Mail</div>
+        <div class="iblock-screen" id="inspScreen">Bereit</div>
+      </div>
+      <div>
+        <div class="iblock-lbl">Praxisbeispiel (Beleg 2427356)</div>
+        <div class="iblock-box" id="inspExample">72 Flaschen gesamt (4 × 12er-Kiste kk12 + 4 × 6er-Karton ktn6).</div>
+      </div>
+    </div>
+    <div class="insp-foot">
+      <strong>Bedienung:</strong> Mausrad = Zoom &bull; Ziehen = Verschieben &bull; Klick = Details
+    </div>
+  </aside>
+</div>
+
+<script>
+// Strict 360px horizontal grid spacing -> 116px clean corridor between 244px cards
+const NODES = [
+  // === STAGE 1: E-MAIL & LOKALE PDF-PRÜFUNG (DSGVO) ===
+  {
+    id: 'n_wis', x: 55, y: 245, type: 'trigger', kicker: 'Start • Büro', icon: '📄',
+    title: 'PACKSCHEIN aus WISPremium',
+    desc: 'Büro sendet PDF per E-Mail an Zufuhr, Abholung oder Post.',
+    hasIn: false,
+    ports: [{ id: 'out', label: 'PDF-Mail', cls: 'p-ai' }],
+    info: {
+      role: 'Startpunkt im Büro: Der Sachbearbeiter erzeugt den PACKSCHEIN wie gewohnt in WISPremium als PDF und sendet ihn per E-Mail an den passenden Logistikbereich.',
+      logic: 'WENN im E-Mail-Betreff oder Text ein Hinweis steht (z. B. „Do / Fr“ oder „Tour 2“), wird dieser automatisch für das Lager übernommen.',
+      screen: 'E-Mail an: +zufuhr | +abholung | +post',
+      screenType: '',
+      example: 'Stefan Bleich sendet Belegnummer 2427356 als PDF an die Zufuhr-Adresse.'
+    }
+  },
+  {
+    id: 'n_gmail', x: 415, y: 245, type: 'ai', kicker: 'Automatik • 06–20 Uhr', icon: '📬',
+    title: 'Postfach-Prüfung (1 Min.)',
+    desc: 'Mo–Sa aktiv, doppelte Mails gesperrt, 14-Tage E-Mail-Löschung.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Neues PDF', cls: 'p-ai' }],
+    info: {
+      role: 'Prüft von Montag bis Samstag (06:00–20:00 Uhr) jede Minute vollautomatisch das Postfach auf neue PDF-Packscheine.',
+      logic: 'WENN ein neues PDF eintrifft -> Einlesen starten. Bereits verarbeitete E-Mails werden nach 14 Tagen automatisch in den Papierkorb verschoben (DSGVO-Aufbewahrungsfrist).',
+      screen: 'Läuft vollautomatisch im Hintergrund (0 Klicks)',
+      screenType: 'ok',
+      example: 'Auch wenn das Büro im selben E-Mail-Verlauf mit einem korrigierten PDF antwortet, wird es sofort erkannt.'
+    }
+  },
+  {
+    id: 'n_switch_cat', x: 775, y: 215, type: 'switch', kicker: 'Weiche • Bereich', icon: '🔀',
+    title: 'Kategorie-Zuordnung',
+    desc: 'Ordnet nach E-Mail-Zieladresse oder „Versandart“ im PDF zu.',
+    hasIn: true,
+    ports: [
+      { id: 'zufuhr', label: '+zufuhr', cls: 'p-teal' },
+      { id: 'abholung', label: '+abholung', cls: 'p-teal' },
+      { id: 'post', label: '+post', cls: 'p-teal' },
+      { id: 'fallback', label: 'Aus PDF (Versandart)', cls: 'p-warn' }
+    ],
+    info: {
+      role: 'Teilt den Auftrag automatisch der richtigen Liste im Lager zu (Zufuhr, Abholung oder Post).',
+      logic: 'WENN Zieladresse +zufuhr / +abholung / +post enthält -> JA: Bereich direkt übernehmen | NEIN: Liest das Feld „Versandart“ aus dem PDF (Standard: Zufuhr).',
+      screen: 'Bereich = Zufuhr / Abholung / Post',
+      screenType: 'ok',
+      example: 'Wird eine E-Mail ohne Zusatz gesendet, erkennt das System „Versandart: Abholung“ direkt aus dem Dokument.'
+    }
+  },
+  {
+    id: 'n_ki_parse', x: 1135, y: 245, type: 'ai', kicker: 'Lokal im Konto • DSGVO', icon: '🛡️',
+    title: 'Lokales PDF-Einlesen',
+    desc: 'Liest Artikel lokal ohne externe KI; kürzt Kundendaten (DSGVO).',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Belegdaten', cls: 'p-ai' }],
+    info: {
+      role: 'Liest Belegnummer, Datum, Positionen und Gesamtmenge zu 100 % lokal innerhalb des eigenen Google-Kontos aus — ohne Übertragung an externe KI-Dienste.',
+      logic: 'Datenschutz (DSGVO): Straße, PLZ, Ort und Telefonnummer des Kunden werden verworfen. Gespeichert wird nur der Firmenname (B2B) bzw. Nachname (B2C) mit Kundennummer. Die temporäre Lesedatei wird sofort unwiderruflich gelöscht.',
+      screen: 'Kunde: „Gasthaus Krone (4400355/1)“ • 8 Weine erkannt',
+      screenType: 'ok',
+      example: 'Beleg 2427356: 4 × 12 Fl. (Jg. 2024/2025) + 4 × 6 Fl. (Secco & VfB Edition) = 72 Fl.'
+    }
+  },
+  {
+    id: 'n_if_sortiment', x: 1495, y: 80, type: 'if', kicker: 'Prüfung 1', icon: '❓',
+    title: 'Prüfung: Artikel im Sortiment?',
+    desc: 'Ist jede Artikelnummer des Scheins im Artikelstamm angelegt?',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • Bekannt', cls: 'p-true' },
+      { id: 'false', label: 'NEIN • Fehlt', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Eingangskontrolle: Verhindert, dass ein neuer oder unbekannter Artikel unbemerkt ins Lager gelangt.',
+      logic: 'WENN alle Artikelnummern im Sortiment existieren -> JA: Weiter zur Mengenkontrolle | NEIN: Anlage stoppen und Hinweis-Mail an das Büro senden.',
+      screen: 'Bei NEIN: Auftrag gestoppt + E-Mail ans Büro',
+      screenType: 'err',
+      example: 'Falls ein Artikel im Sortiment noch keinen Barcode hat (z. B. Fasswein), wird ein Hinweis für das Lager ergänzt.'
+    }
+  },
+  {
+    id: 'n_if_sum', x: 1495, y: 345, type: 'if', kicker: 'Prüfung 2', icon: '❓',
+    title: 'Prüfung: Summe = Gesamtmenge?',
+    desc: 'Stimmt die Summe aller Zeilen exakt mit „Gesamtmenge“ überein?',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • Stimmt', cls: 'p-true' },
+      { id: 'false', label: 'NEIN • Abweichung', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Rechnerische 100-%-Kontrolle gegen unvollständige Seiten oder Übertragungsfehler.',
+      logic: 'WENN Summe der Einzelpositionen = Gesamtmenge auf dem PDF -> JA: Daten sind vollständig | NEIN: Anlage stoppen und Büro per E-Mail informieren.',
+      screen: '72 Flaschen = 72 Flaschen -> Geprüft ✓',
+      screenType: 'ok',
+      example: 'Würde bei einem mehrseitigen Schein eine Zeile fehlen (66 statt 72 Fl.), blockiert das System sofort.'
+    }
+  },
+  {
+    id: 'n_if_exists', x: 1855, y: 75, type: 'if', kicker: 'Prüfung 3', icon: '❓',
+    title: 'Prüfung: Belegnr. schon da?',
+    desc: 'Ist es ein neuer Lieferschein oder eine zweite PDF-Mail?',
+    hasIn: true,
+    ports: [
+      { id: 'false', label: 'NEIN • Neuer Schein', cls: 'p-true' },
+      { id: 'true', label: 'JA • Schon da', cls: 'p-warn' }
+    ],
+    info: {
+      role: 'Unterscheidet einen neuen Auftrag von einem korrigierten Packschein.',
+      logic: 'WENN Belegnummer noch nicht vorhanden -> NEIN: Direkt neu anlegen | JA: Prüfen, ob der bestehende Auftrag zurückgesetzt werden darf.',
+      screen: 'NEIN -> Neu anlegen | JA -> Schutzprüfung',
+      screenType: '',
+      example: 'Nach einer Fehlmengen-Meldung schickt das Büro den geänderten Packschein unter derselben Belegnummer erneut.'
+    }
+  },
+  {
+    id: 'n_if_reset_ok', x: 1855, y: 295, type: 'if', kicker: 'Prüfung 4', icon: '❓',
+    title: 'Prüfung: Neu laden erlaubt?',
+    desc: 'Ist der Auftrag noch ungescannt (0) ODER wurde Fehlmenge gemeldet?',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • Auf 0 laden', cls: 'p-true' },
+      { id: 'false', label: 'NEIN • Geschützt', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Schützt laufende Lagerarbeit vor versehentlichem Überschreiben, erlaubt aber das automatische Neuladen nach einer Fehlmenge.',
+      logic: 'WENN (noch 0 Fl. gescannt) ODER (Fehlmenge gemeldet & noch nicht abgeschlossen) -> JA: Auf 0 zurücksetzen und neues PDF laden | NEIN: Abgelehnt + Warn-Mail ans Büro.',
+      screen: 'JA: „🔄 Korrigierter Packschein neu geladen“',
+      screenType: 'warn',
+      example: 'Bisherige Scans werden sauber als Rücksetzung im Protokoll vermerkt und der Auftrag startet frisch bei 0.'
+    }
+  },
+  {
+    id: 'n_err_import', x: 1855, y: 525, type: 'stop', kicker: 'Stopp • Büro-Info', icon: '🛑',
+    title: 'Import-Stopp & E-Mail ans Büro',
+    desc: 'Kein fehlerhafter Auftrag im Lager. Absender erhält E-Mail.',
+    hasIn: true,
+    ports: [],
+    info: {
+      role: 'Sichere Rückmeldung: Nur der Büro-Mitarbeiter, der das PDF gesendet hat, erhält sofort eine E-Mail mit der genauen Ursache.',
+      logic: 'Wird ausgelöst bei NEIN in der Sortiments-, Summen- oder Überschreibprüfung.',
+      screen: 'E-Mail: „⚠️ Import-Fehler Lieferschein 2427356...“',
+      screenType: 'err',
+      example: 'Das Büro ergänzt z. B. den neuen Wein im Sortiment und sendet das PDF einfach noch einmal.'
+    }
+  },
+
+  // === STAGE 2: KATEGORIEN, LISTE & QR ===
+  {
+    id: 'n_create_load', x: 2215, y: 215, type: 'action', kicker: 'Anlage • 0 Flaschen', icon: '💾',
+    title: 'Auftrag bereitstellen (Ist = 0)',
+    desc: 'Status = Offen; rechnet Gebinde automatisch aus (z. B. 1 * kk12).',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'In Tagesliste', cls: 'p-true' }],
+    info: {
+      role: 'Legt den Auftrag mit allen Positionen und den optimalen Verpackungseinheiten (Kiste / Karton / Einzelflaschen) für das Lager an.',
+      logic: 'Alle Positionen starten bei 0 gescannten Flaschen (Status „Offen“).',
+      screen: 'Status: Offen • 0 / 72 Fl. (0 %)',
+      screenType: 'ok',
+      example: 'Art. 9 (12 Fl.) -> „1 * kk12“ • Art. 85 (6 Fl.) -> „1 * ktn6“.'
+    }
+  },
+  {
+    id: 'n_tabs', x: 2575, y: 215, type: 'switch', kicker: 'Tagesübersicht', icon: '📱',
+    title: 'Zufuhr | Abholung | Post',
+    desc: 'Zeigt QR-Code, Kunde, Fortschritt & Kürzel des Kommissionierers.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'QR / Antippen', cls: 'p-teal' }],
+    info: {
+      role: 'Übersichtliche Tageslisten unten auf dem Handgerät: Zufuhr, Abholung und Post getrennt (das Büro sieht im Menü zusätzlich die Gesamtliste).',
+      logic: 'Zeigt alle offenen, laufenden und heute geprüften Aufträge. Abgeschlossene Aufträge wandern am nächsten Tag automatisch ins Archiv.',
+      screen: 'Karte: QR-Code • 2427356 — Kunde • 0/72 Fl. • Bearbeiter',
+      screenType: 'ok',
+      example: 'Am Kürzel „DN“ sehen alle Kollegen sofort, wer diesen Auftrag gerade packt.'
+    }
+  },
+  {
+    id: 'n_qr_open', x: 2935, y: 215, type: 'if', kicker: 'Prüfung 5', icon: '📷',
+    title: 'Prüfung: Auftrag schon fertig?',
+    desc: 'Öffnet den Auftrag per QR-Scan vom PC-Bildschirm oder Antippen.',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • Gesperrt', cls: 'p-false' },
+      { id: 'false', label: 'NEIN • Offen (Aktiv)', cls: 'p-true' }
+    ],
+    info: {
+      role: 'Öffnet die Auftragsansicht mit der gesamten Gebinde-Zusammenfassung (z. B. 4 × kk12 • 4 × ktn6).',
+      logic: 'WENN Status bereits „Geprüft“ oder „Storniert“ -> JA: Auftrag ist schreibgeschützt | NEIN: Scannen ist freigegeben.',
+      screen: 'Gesamtbedarf: „8 Pos. (72 Fl.) • 4 × kk12 • 4 × ktn6“',
+      screenType: 'ok',
+      example: 'Noch offene Weine stehen immer oben; fertig gepackte Positionen rutschen automatisch nach unten.'
+    }
+  },
+
+  // === STAGE 3: PICK-BY-SCAN (JA / NEIN) ===
+  {
+    id: 'n_readonly', x: 3330, y: 75, type: 'audit', kicker: 'Schreibschutz', icon: '🔒',
+    title: 'Auftrag gesperrt (Nur Lesen)',
+    desc: 'Fertige oder stornierte Aufträge können nicht mehr geändert werden.',
+    hasIn: true,
+    ports: [],
+    info: {
+      role: 'Schützt abgeschlossene und stornierte Lieferscheine vor nachträglichen Fehlbuchungen.',
+      logic: 'Alle Eingabefelder, Scan-Knöpfe und Mengenänderungen sind komplett ausgeblendet.',
+      screen: 'Reine Leseansicht',
+      screenType: '',
+      example: 'Ein bereits geprüfter Auftrag bleibt unveränderbar dokumentiert.'
+    }
+  },
+  {
+    id: 'n_scan_in', x: 3330, y: 285, type: 'trigger', kicker: 'Lager • Pflichtfeld', icon: '🔫',
+    title: '1. Bearbeiter & Barcode-Scan',
+    desc: 'Zuerst eigenes Kürzel eintragen, dann Flasche/Karton/Kiste scannen.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Barcode prüfen', cls: 'p-ai' }],
+    info: {
+      role: 'Startpunkt am Handscanner: Zuerst trägt der Kommissionierer sein Kürzel ein (Pflicht auf gemeinsamen Lager-Geräten), danach wird gescannt.',
+      logic: 'WENN Bearbeiter-Kürzel fehlt -> Sofort rote Warnung „Bitte zuerst Bearbeiter (Kürzel) eintragen!“. Unterstützt Einzelscan, Menge × N und freihändigen Schnell-Scan.',
+      screen: 'Felder: Bearbeiter • Modus • Scan-Art • Barcode',
+      screenType: '',
+      example: 'Im Schnell-Scan (Auto) kann der Mitarbeiter Karton für Karton ohne Display-Berührung durchscannen.'
+    }
+  },
+  {
+    id: 'n_if_display', x: 3690, y: 260, type: 'if', kicker: 'Scan-Prüfung 1', icon: '❓',
+    title: 'Prüfung: Display-Barcode?',
+    desc: 'Wurde versehentlich ein gesperrter Display-Code gescannt?',
+    hasIn: true,
+    ports: [
+      { id: 'false', label: 'NEIN • Weiter', cls: 'p-true' },
+      { id: 'true', label: 'JA • Display-Code', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Verhindert Fehlbuchungen durch große Display- oder Aktionsaufsteller-Barcodes.',
+      logic: 'WENN gescannter Code ein Display-Barcode ist -> JA: Sofort roter Stopp | NEIN: Weiter zur Auftragsprüfung.',
+      screen: '„⚠️ FEHLER: Display-Barcode nicht unterstützt!“',
+      screenType: 'err',
+      example: 'Bei Federle-Displays wird der Scan abgewiesen und auf Karton/Flasche verwiesen.'
+    }
+  },
+  {
+    id: 'n_err_display', x: 3690, y: 515, type: 'stop', kicker: 'Roter Stopp', icon: '🛑',
+    title: 'Stopp: Display gesperrt',
+    desc: 'Keine Buchung (0 Fl.). Schnell-Scan stoppt; Protokoll vermerkt Wein.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Quittieren', cls: 'p-warn' }],
+    info: {
+      role: 'Klare Rückmeldung am Bildschirm: Bitte den Barcode auf dem Einzelkarton oder der Flasche scannen.',
+      logic: 'Es wird nichts gebucht. Der Fehlversuch wird mit Artikelnamen im Prüfprotokoll festgehalten.',
+      screen: 'Großer roter Warnbanner am Handgerät',
+      screenType: 'err',
+      example: 'Nach Klick auf „Fehler zurücksetzen“ kann sofort weitergescannt werden.'
+    }
+  },
+  {
+    id: 'n_if_order', x: 4050, y: 195, type: 'if', kicker: 'Scan-Prüfung 2', icon: '❓',
+    title: 'Prüfung: Wein im Lieferschein?',
+    desc: 'Gehört der Barcode (Flasche / Karton / Kiste) zu diesem Auftrag?',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • Im Auftrag', cls: 'p-true' },
+      { id: 'false', label: 'NEIN • Nicht im Schein', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Verwechslungsschutz: Prüft automatisch Flaschen-, Karton-, 6er-Kisten- und 12er-Kisten-Barcodes aller Weine auf dem Schein.',
+      logic: 'WENN der Barcode im Lieferschein enthalten ist -> JA: Gebindegröße erkennen (+1/+6/+12/+20/+24) | NEIN: Prüfen, ob Chargen-Etikett oder falscher Wein.',
+      screen: 'JA -> Richtiger Wein erkannt',
+      screenType: 'ok',
+      example: 'Ein Scan auf den 12er-Kisten-Code von Art. 9 erkennt sofort +12 Flaschen.'
+    }
+  },
+  {
+    id: 'n_if_len13', x: 4050, y: 480, type: 'if', kicker: 'Scan-Prüfung 2b', icon: '🏷️',
+    title: 'Prüfung: Chargen-Code (≠ 13)?',
+    desc: 'Wurde versehentlich die kurze Los-/Chargennummer gescannt?',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • Chargen-Code', cls: 'p-warn' },
+      { id: 'false', label: 'NEIN • Falscher Wein', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Unterscheidet einen versehentlich gescannten Chargen-Aufkleber (z. B. 10 Ziffern) von einem echten falschen Wein (13 Ziffern).',
+      logic: 'WENN Code-Länge nicht 13 Ziffern hat -> JA: Hinweis „Kein 13-stelliger Artikel-EAN (evtl. Chargen-Code)!“ | NEIN: Warnung „Artikel nicht im Lieferschein!“.',
+      screen: 'Passende Fehlermeldung auf dem Display',
+      screenType: 'err',
+      example: 'Der Mitarbeiter weiß sofort, ob er nur das Nachbar-Etikett erwischt oder zum falschen Karton gegriffen hat.'
+    }
+  },
+  {
+    id: 'n_if_storno', x: 4410, y: 145, type: 'if', kicker: 'Scan-Prüfung 3', icon: '❓',
+    title: 'Prüfung: Modus „Storno“ aktiv?',
+    desc: 'Soll Menge abgezogen („Storno“) oder normal zugebucht werden?',
+    hasIn: true,
+    ports: [
+      { id: 'false', label: 'NEIN • Buchen (+)', cls: 'p-true' },
+      { id: 'true', label: 'JA • Storno (-)', cls: 'p-warn' }
+    ],
+    info: {
+      role: 'Ermöglicht das gezielte Abziehen einer Buchung, falls ein Karton versehentlich doppelt gescannt wurde.',
+      logic: 'WENN Schalter auf „Storno“ steht -> JA: Abzug prüfen | NEIN: Normale Zubuchung gegen Überfüllung prüfen.',
+      screen: 'Im Storno-Modus leuchtet der Schalter warnend orange',
+      screenType: 'warn',
+      example: 'Nach 1× Storno-Scan springt die App automatisch wieder in den normalen Modus „Scannen“ zurück.'
+    }
+  },
+  {
+    id: 'n_err_wrong', x: 4410, y: 505, type: 'stop', kicker: 'Roter Stopp', icon: '🛑',
+    title: 'Stopp: Fehlgriff / Überfüllung',
+    desc: 'Falscher Wein, Charge oder zu große Menge wird sofort blockiert.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Quittieren', cls: 'p-warn' }],
+    info: {
+      role: '100-%-Fehlerschutz (Poka-Yoke): Keine falsche oder überzählige Flasche kann auf den Lieferschein gebucht werden.',
+      logic: 'Menge bleibt unverändert; Schnell-Scan hält an; das Prüfprotokoll dokumentiert den Fehlversuch samt Artikelnamen.',
+      screen: '⚠️ FEHLER: Artikel nicht im Schein / Überfüllung verboten!',
+      screenType: 'err',
+      example: 'Erst nach Bestätigung über „Fehler zurücksetzen“ ist das Scan-Feld wieder frei.'
+    }
+  },
+  {
+    id: 'n_if_storno_lim', x: 4770, y: 75, type: 'if', kicker: 'Storno-Schutz', icon: '❓',
+    title: 'Prüfung: Storno > Ist-Menge?',
+    desc: 'Würde durch den Abzug ein Minus-Bestand (unter 0) entstehen?',
+    hasIn: true,
+    ports: [
+      { id: 'false', label: 'NEIN • Abzug OK', cls: 'p-true' },
+      { id: 'true', label: 'JA • Zu viel (Stopp)', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Verhindert rechnerische Minus-Bestände beim Korrigieren.',
+      logic: 'WENN bereits 0 Flaschen gebucht sind ODER der Abzug größer als der Ist-Bestand ist -> JA: Roter Stopp | NEIN: Menge abziehen.',
+      screen: '„⚠️ FEHLER: Storno-Menge größer als Ist-Bestand!“',
+      screenType: 'err',
+      example: 'Sind erst 2 Flaschen gebucht, lässt sich kein 6er-Karton (-6 Fl.) abziehen.'
+    }
+  },
+  {
+    id: 'n_if_overfill', x: 4770, y: 305, type: 'if', kicker: 'Scan-Prüfung 4', icon: '❓',
+    title: 'Prüfung: Menge > offener Rest?',
+    desc: 'Überschreitet das gescannte Gebinde die noch offene Restmenge?',
+    hasIn: true,
+    ports: [
+      { id: 'false', label: 'NEIN • Menge passt', cls: 'p-true' },
+      { id: 'true', label: 'JA • Zu viel (Stopp)', cls: 'p-false' }
+    ],
+    info: {
+      role: 'Sperre gegen Überlieferung: Es kann niemals mehr gebucht werden, als der Kunde bestellt hat.',
+      logic: 'WENN (Gebindegröße × Anzahl) größer als die offene Restmenge ist -> JA: Roter Stopp „Überfüllung verboten!“ | NEIN: Menge buchen.',
+      screen: '„⚠️ FEHLER: Überfüllung verboten!“',
+      screenType: 'err',
+      example: 'Fehlen nur noch 3 Flaschen, wird der Scan eines 6er-Kartons blockiert (3 Einzelflaschen scannen).'
+    }
+  },
+  {
+    id: 'n_book_ok', x: 5130, y: 190, type: 'action', kicker: 'Buchung • Lager', icon: '➕',
+    title: 'Menge buchen & zurück auf 1×',
+    desc: 'Flaschen werden gebucht; Modus springt sicher auf „Scannen (1×)“.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Abschluss prüfen', cls: 'p-true' }],
+    info: {
+      role: 'Trägt die geprüften Flaschen in die Position ein und stellt Modus sowie Mengenfaktor sofort wieder auf den Standardwert (1× Scannen).',
+      logic: 'Aktualisiert Ist-Menge, Positionsstatus („Offen“ / „In Arbeit“ / „Vollständig“) und Uhrzeit der letzten Buchung.',
+      screen: '✅ OK: Artikel erkannt • Fortschritt aktualisiert',
+      screenType: 'ok',
+      example: 'Nach Buchung von 4 × 6er-Karton (+24 Fl.) springt die Anzahl automatisch auf 1 zurück.'
+    }
+  },
+  {
+    id: 'n_if_complete', x: 5490, y: 190, type: 'if', kicker: 'Endkontrolle', icon: '❓',
+    title: 'Prüfung: Alle Weine 100 %?',
+    desc: 'Ist bei jeder einzelnen Position des Scheins Ist = Soll erreicht?',
+    hasIn: true,
+    ports: [
+      { id: 'true', label: 'JA • 100 % komplett', cls: 'p-true' },
+      { id: 'false', label: 'NEIN • Noch offen', cls: 'p-ai' }
+    ],
+    info: {
+      role: 'Prüft jede einzelne Weinposition des Auftrags auf 100 % Vollständigkeit.',
+      logic: 'WENN keine einzige offene Position mehr übrig ist -> JA: Auftrag automatisch auf „Geprüft ✓“ setzen | NEIN: Status bleibt „In Bearbeitung“.',
+      screen: 'JA -> Grün ✓ Geprüft | NEIN -> Nächster Scan',
+      screenType: 'ok',
+      example: 'Sobald die 72. Flasche von Beleg 2427356 gescannt ist, schließt der Auftrag von selbst ab.'
+    }
+  },
+
+  // === STAGE 4: SONDERFÄLLE & OHNE BARCODE ===
+  {
+    id: 'n_btn_offen', x: 2575, y: 830, type: 'warn', kicker: 'Übergabe • Neustart', icon: '↩️',
+    title: 'In Offene zurücksetzen (0 Fl.)',
+    desc: 'Setzt angefangenen Auftrag nach Bestätigung wieder komplett auf 0.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Wieder Offen', cls: 'p-warn' }],
+    info: {
+      role: 'Sauberer Neustart oder Übergabe an einen Kollegen, falls ein Auftrag unterbrochen werden muss.',
+      logic: 'Dokumentiert die Rücksetzung (-X Fl.) im Prüfprotokoll, stellt alle Positionen auf 0, löscht das Bearbeiter-Kürzel und setzt den Status auf „Offen“.',
+      screen: 'Auftrag steht wieder bei 0 Fl. als „Offen“ in der Liste',
+      screenType: 'warn',
+      example: 'Im Protokoll bleibt nachvollziehbar, wann und von wem der Auftrag zurückgesetzt wurde.'
+    }
+  },
+  {
+    id: 'n_btn_fehlmenge', x: 3150, y: 830, type: 'warn', kicker: 'Bestand fehlt', icon: '✉️',
+    title: 'Fehlmenge an Büro melden',
+    desc: '1 Klick sendet E-Mail mit allen fehlenden Weinen an das Büro.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Korrektur-PDF', cls: 'p-warn' }],
+    info: {
+      role: 'Wenn ein Wein im Lager nicht ausreicht, informiert der Kommissionierer mit einem Klick direkt den zuständigen Büro-Mitarbeiter per E-Mail.',
+      logic: 'Zeigt zur Kontrolle alle fehlenden Mengen im Bestätigungsfenster und versendet innerhalb von 1 Minute automatisch die Fehlmengen-Mail ans Büro.',
+      screen: 'E-Mail an Büro: „⚠️ Fehlmenge Lieferschein 2427356“',
+      screenType: 'warn',
+      example: 'Das Büro ändert den Schein in WISPremium und mailt das neue PDF -> Auftrag startet automatisch bei 0.'
+    }
+  },
+  {
+    id: 'n_ohne_ean', x: 3725, y: 830, type: 'action', kicker: 'Fasswein / Sonderartikel', icon: '☑️',
+    title: 'Ohne EAN bestätigen (KEG)',
+    desc: 'Nur sichtbar bei Artikeln ohne Barcode im Sortiment! Mit Rückfrage.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Geprüft + Protokoll', cls: 'p-true' }],
+    info: {
+      role: 'Erlaubt die Bestätigung von Sonderartikeln ohne Etiketten-Barcode (z. B. 30-Liter-Fass KEG), ohne die Scan-Pflicht für normale Weine aufzuheben.',
+      logic: 'WENN ein Artikel im Sortiment keinen einzigen Barcode hat UND das Bearbeiter-Kürzel eingetragen ist -> Häkchen „Ohne EAN bestätigen“ erscheint -> Bestätigungsfrage -> Protokolleintrag „Manuell (ohne EAN)“ -> Menge = Soll.',
+      screen: 'Rückfrage: „Alle X Stück physisch geprüft?“',
+      screenType: 'ok',
+      example: 'Bei allen normalen Weinen mit Barcode ist dieser Knopf unsichtbar (kein Umgehen des Scannens möglich).'
+    }
+  },
+  {
+    id: 'n_storno_auftr', x: 4300, y: 830, type: 'audit', kicker: 'Büro • Stornierung', icon: '🚫',
+    title: 'Büro: Auftrag „Storniert“',
+    desc: 'Statt Löschen: Status „Storniert“ sperrt Auftrag & schiebt ins Archiv.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Sofort Archiv', cls: 'p-false' }],
+    info: {
+      role: 'Belege werden nie spurlos gelöscht: Das Büro setzt stornierte Bestellungen auf „Storniert“.',
+      logic: 'Speichert automatisch den Storno-Zeitpunkt, sperrt alle Eingaben und nimmt den Auftrag sofort von den Lager-Bildschirmen ins Archiv.',
+      screen: 'Status: Storniert (sofort im Archiv)',
+      screenType: 'err',
+      example: 'Storniert ein Kunde telefonisch, verschwindet der Schein sofort aus der Lagerliste.'
+    }
+  },
+  {
+    id: 'n_reset_err', x: 4875, y: 830, type: 'warn', kicker: 'Fehler-Quittierung', icon: '🧹',
+    title: 'Knopf: Fehler zurücksetzen',
+    desc: 'Löscht den falschen Barcode nach roter Warnung für neuen Scan.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Neuer Scan', cls: 'p-true' }],
+    info: {
+      role: 'Zwingt bei einem Fehlgriff zum kurzen Hinsehen: Der Mitarbeiter legt den falschen Karton weg und quittiert die rote Meldung.',
+      logic: 'Leert das Barcode-Feld und stellt Modus sowie Mengenfaktor wieder auf „Scannen (1×)“.',
+      screen: 'Roter Warnbanner verschwindet • Bereit',
+      screenType: 'warn',
+      example: 'Verhindert, dass im Schnell-Scan bei einem Fehler blind weitergescannt wird.'
+    }
+  },
+
+  // === STAGE 5: ABSCHLUSS, PROTOKOLL & ARCHIV ===
+  {
+    id: 'n_done', x: 5905, y: 75, type: 'action', kicker: 'Fertiggestellt ✓', icon: '✅',
+    title: 'Status: Geprüft (Gesperrt)',
+    desc: '100 % gepackt, Uhrzeit gespeichert, Auftrag schreibgeschützt.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Ab Folgetag', cls: 'p-true' }],
+    info: {
+      role: 'Automatische Fertigmeldung, sobald die letzte Position erfüllt ist.',
+      logic: 'Speichert Datum und Uhrzeit des Abschlusses. Bleibt am selben Tag mit grünem Häkchen ✓ in der Tagesliste sichtbar und wechselt ab Mitternacht ins Archiv.',
+      screen: 'Grün ✓ „Geprüft“ • 72 / 72 Fl. (100 %)',
+      screenType: 'ok',
+      example: 'Das Büro sieht sofort live am PC, dass die Lieferung fertig kommissioniert ist.'
+    }
+  },
+  {
+    id: 'n_loop', x: 5905, y: 290, type: 'ai', kicker: 'Schnell-Scan', icon: '🔄',
+    title: 'In Bearbeitung & Weiter-Scan',
+    desc: 'Im Auto-Modus öffnet sich sofort das Feld für den nächsten Karton.',
+    hasIn: true,
+    ports: [{ id: 'out', label: 'Nächster Scan', cls: 'p-ai' }],
+    info: {
+      role: 'Sorgt für flüssiges Arbeiten beim Kommissionieren ganzer Paletten.',
+      logic: 'WENN der Auftrag noch unter 100 % steht und kein Fehler vorliegt -> Schnell-Scan-Maske öffnet sich sofort wieder für den nächsten Barcode.',
+      screen: 'Bereit für nächsten Barcode-Scan',
+      screenType: 'ok',
+      example: 'Mit dem Ring-Scanner am Finger muss das Handgerät beim Packen nicht in die Hand genommen werden.'
+    }
+  },
+  {
+    id: 'n_audit', x: 5905, y: 520, type: 'audit', kicker: 'Protokoll • Büro', icon: '📋',
+    title: 'Scan-Protokoll (Nachweis)',
+    desc: 'Dokumentiert jeden Scan, Fehlgriff, Neustart & Bearbeiter.',
+    hasIn: true,
+    ports: [],
+    info: {
+      role: 'Lückenloser Qualitätsnachweis für das Büro bei Kundenrückfragen.',
+      logic: 'Speichert jeden einzelnen Scan mit Uhrzeit, Barcode, Gebindeart, Mengenänderung (+1/+6/+12), Ergebnis (OK / FEHLER / RESET) und Mitarbeiter-Kürzel.',
+      screen: 'Sichtbar für Büro: 14 Tage in App + Tabelle',
+      screenType: 'ok',
+      example: 'Bei Reklamationen sieht das Büro sekundengenau, wann welcher Karton gescannt wurde.'
+    }
+  },
+  {
+    id: 'n_offline', x: 5905, y: 740, type: 'audit', kicker: 'Keller-WLAN & DSGVO', icon: '📶',
+    title: 'Funkloch-Schutz & Datenschutz',
+    desc: 'Scannen läuft auch ohne WLAN weiter; 14-Tage Datenminimierung.',
+    hasIn: false,
+    ports: [],
+    info: {
+      role: 'Hohe Ausfallsicherheit im Weinkeller kombiniert mit strengem deutschem Datenschutz (DSGVO).',
+      logic: 'Auf den Geräten liegen nur die Aufträge der letzten 14 Tage (schnell & offline-fähig). Keine externe KI, gekürzte Kundendaten und automatische E-Mail-Bereinigung nach 14 Tagen.',
+      screen: '100 % lokal im Konto • Offline-fähig im Keller',
+      screenType: 'ok',
+      example: 'Bricht im Gewölbekeller das WLAN ab, puffert das Gerät alle Scans und überträgt sie automatisch am Ausgang.'
+    }
+  },
+  {
+    id: 'n_archiv', x: 5905, y: 955, type: 'audit', kicker: 'Ablage • Nur Lesen', icon: '🗄️',
+    title: 'Archiv (Abgeschlossene Scheine)',
+    desc: 'Storniert = sofort; Geprüft = ab Folgetag (für Büro einsehbar).',
+    hasIn: true,
+    ports: [],
+    info: {
+      role: 'Saubere Trennung zwischen aktueller Tagesarbeit im Lager und erledigten Aufträgen für das Büro.',
+      logic: 'Stornierte Scheine wandern sofort ins Archiv, geprüfte Scheine am nächsten Morgen. Reine Leseansicht ohne Scan-Knöpfe.',
+      screen: 'Im Menü unter „Archiv(Lieferscheine)“ (nur Büro)',
+      screenType: '',
+      example: 'Hält die Listen auf den Lager-Scannern jeden Morgen schlank und übersichtlich.'
+    }
+  }
+];
+
+// Clean routed edges with German business labels (JA / NEIN)
+const EDGES = [
+  // Stage 1
+  { id: 'e1', from: 'n_wis', port: 'out', to: 'n_gmail', color: '#1d4ed8', marker: 'arr-ai', label: '' },
+  { id: 'e2', from: 'n_gmail', port: 'out', to: 'n_switch_cat', color: '#1d4ed8', marker: 'arr-ai', label: '' },
+  { id: 'e3a', from: 'n_switch_cat', port: 'zufuhr', to: 'n_ki_parse', color: '#0f766e', marker: 'arr-teal', label: '' },
+  { id: 'e3b', from: 'n_switch_cat', port: 'abholung', to: 'n_ki_parse', color: '#0f766e', marker: 'arr-teal', label: '' },
+  { id: 'e3c', from: 'n_switch_cat', port: 'post', to: 'n_ki_parse', color: '#0f766e', marker: 'arr-teal', label: '' },
+  { id: 'e3d', from: 'n_switch_cat', port: 'fallback', to: 'n_ki_parse', color: '#b45309', marker: 'arr-warn', label: '' },
+  { id: 'e4', from: 'n_ki_parse', port: 'out', to: 'n_if_sortiment', color: '#1d4ed8', marker: 'arr-ai', label: '' },
+  { id: 'e5_t', from: 'n_if_sortiment', port: 'true', to: 'n_if_sum', color: '#15803d', marker: 'arr-true', label: 'JA', route: 'col-drop', midX: 1455 },
+  { id: 'e5_f', from: 'n_if_sortiment', port: 'false', to: 'n_err_import', color: '#b91c1c', marker: 'arr-false', label: 'NEIN', route: 'ortho-mid', midX: 1790 },
+  { id: 'e6_t', from: 'n_if_sum', port: 'true', to: 'n_if_exists', color: '#15803d', marker: 'arr-true', label: 'JA', route: 'ortho-mid', midX: 1765 },
+  { id: 'e6_f', from: 'n_if_sum', port: 'false', to: 'n_err_import', color: '#b91c1c', marker: 'arr-false', label: 'NEIN' },
+  { id: 'e7_f', from: 'n_if_exists', port: 'false', to: 'n_create_load', color: '#15803d', marker: 'arr-true', label: 'NEU' },
+  { id: 'e7_t', from: 'n_if_exists', port: 'true', to: 'n_if_reset_ok', color: '#b45309', marker: 'arr-warn', label: 'JA', route: 'col-drop', midX: 1815 },
+  { id: 'e8_t', from: 'n_if_reset_ok', port: 'true', to: 'n_create_load', color: '#15803d', marker: 'arr-true', label: 'AUF 0' },
+  { id: 'e8_f', from: 'n_if_reset_ok', port: 'false', to: 'n_err_import', color: '#b91c1c', marker: 'arr-false', label: 'NEIN', route: 'col-drop', midX: 1815 },
+
+  // Stage 2
+  { id: 'e9', from: 'n_create_load', port: 'out', to: 'n_tabs', color: '#15803d', marker: 'arr-true', label: '' },
+  { id: 'e10', from: 'n_tabs', port: 'out', to: 'n_qr_open', color: '#0f766e', marker: 'arr-teal', label: 'QR / Klick' },
+  { id: 'e11_t', from: 'n_qr_open', port: 'true', to: 'n_readonly', color: '#b91c1c', marker: 'arr-false', label: 'JA' },
+  { id: 'e11_f', from: 'n_qr_open', port: 'false', to: 'n_scan_in', color: '#15803d', marker: 'arr-true', label: 'NEIN' },
+
+  // Stage 3
+  { id: 'e12', from: 'n_scan_in', port: 'out', to: 'n_if_display', color: '#1d4ed8', marker: 'arr-ai', label: '' },
+  { id: 'e13_f', from: 'n_if_display', port: 'false', to: 'n_if_order', color: '#15803d', marker: 'arr-true', label: 'NEIN' },
+  { id: 'e13_t', from: 'n_if_display', port: 'true', to: 'n_err_display', color: '#b91c1c', marker: 'arr-false', label: 'JA', route: 'col-drop', midX: 3650 },
+  { id: 'e14_t', from: 'n_if_order', port: 'true', to: 'n_if_storno', color: '#15803d', marker: 'arr-true', label: 'JA' },
+  { id: 'e14_f', from: 'n_if_order', port: 'false', to: 'n_if_len13', color: '#b91c1c', marker: 'arr-false', label: 'NEIN', route: 'col-drop', midX: 4010 },
+  { id: 'e15_t', from: 'n_if_len13', port: 'true', to: 'n_err_wrong', color: '#b45309', marker: 'arr-warn', label: 'CHARGE', labelT: 0.35, labelDy: -11 },
+  { id: 'e15_f', from: 'n_if_len13', port: 'false', to: 'n_err_wrong', color: '#b91c1c', marker: 'arr-false', label: 'FALSCH', labelT: 0.68, labelDy: 13 },
+  { id: 'e16_f', from: 'n_if_storno', port: 'false', to: 'n_if_overfill', color: '#15803d', marker: 'arr-true', label: 'BUCHEN' },
+  { id: 'e16_t', from: 'n_if_storno', port: 'true', to: 'n_if_storno_lim', color: '#b45309', marker: 'arr-warn', label: 'STORNO' },
+  { id: 'e17_f', from: 'n_if_storno_lim', port: 'false', to: 'n_book_ok', color: '#15803d', marker: 'arr-true', label: 'OK (-)' },
+  { id: 'e17_t', from: 'n_if_storno_lim', port: 'true', to: 'n_err_wrong', color: '#b91c1c', marker: 'arr-false', label: 'STOPP', route: 'ortho-mid', midX: 4375 },
+  { id: 'e18_f', from: 'n_if_overfill', port: 'false', to: 'n_book_ok', color: '#15803d', marker: 'arr-true', label: 'OK (+)' },
+  { id: 'e18_t', from: 'n_if_overfill', port: 'true', to: 'n_err_wrong', color: '#b91c1c', marker: 'arr-false', label: 'ZU VIEL', route: 'ortho-mid', midX: 4390 },
+  { id: 'e19', from: 'n_book_ok', port: 'out', to: 'n_if_complete', color: '#15803d', marker: 'arr-true', label: '' },
+  { id: 'e20_t', from: 'n_if_complete', port: 'true', to: 'n_done', color: '#15803d', marker: 'arr-true', label: 'JA (100 %)' },
+  { id: 'e20_f', from: 'n_if_complete', port: 'false', to: 'n_loop', color: '#1d4ed8', marker: 'arr-ai', label: 'NEIN (< 100 %)' },
+
+  // Stage 4 & Clean Corridor Loops
+  { id: 'e_loop_back', from: 'n_loop', port: 'out', to: 'n_scan_in', color: '#1d4ed8', marker: 'arr-ai', label: 'NÄCHSTER SCAN', arcY: 668 },
+  { id: 'e_err1_reset', from: 'n_err_display', port: 'out', to: 'n_reset_err', color: '#b45309', marker: 'arr-warn', label: '', arcY: 755 },
+  { id: 'e_err2_reset', from: 'n_err_wrong', port: 'out', to: 'n_reset_err', color: '#b45309', marker: 'arr-warn', label: '' },
+  { id: 'e_reset_scan', from: 'n_reset_err', port: 'out', to: 'n_scan_in', color: '#15803d', marker: 'arr-true', label: 'NEUER SCAN', arcY: 1055 },
+  { id: 'e_qr_offen', from: 'n_qr_open', port: 'false', to: 'n_btn_offen', color: '#b45309', marker: 'arr-warn', label: 'ÜBERGABE', route: 'ortho-mid', midX: 2535 },
+  { id: 'e_offen_tabs', from: 'n_btn_offen', port: 'out', to: 'n_tabs', color: '#b45309', marker: 'arr-warn', label: 'AUF 0', route: 'ortho-mid', midX: 2555 },
+  { id: 'e_qr_fehl', from: 'n_qr_open', port: 'false', to: 'n_btn_fehlmenge', color: '#b45309', marker: 'arr-warn', label: 'FEHLBESTAND', route: 'ortho-mid', midX: 3115 },
+  { id: 'e_fehl_wis', from: 'n_btn_fehlmenge', port: 'out', to: 'n_wis', color: '#b45309', marker: 'arr-warn', label: 'E-MAIL -> NEUES PDF', arcY: 1115 },
+  { id: 'e_qr_ohne_ean', from: 'n_qr_open', port: 'false', to: 'n_ohne_ean', color: '#15803d', marker: 'arr-true', label: 'OHNE BARCODE', route: 'ortho-mid', midX: 3685 },
+  { id: 'e_ohne_ean_book', from: 'n_ohne_ean', port: 'out', to: 'n_book_ok', color: '#15803d', marker: 'arr-true', label: 'MENGE = SOLL', route: 'ortho-mid', midX: 5095 },
+  { id: 'e_tabs_storno', from: 'n_tabs', port: 'out', to: 'n_storno_auftr', color: '#b91c1c', marker: 'arr-false', label: 'BÜRO STORNO', route: 'ortho-mid', midX: 4265 },
+  { id: 'e_storno_arch', from: 'n_storno_auftr', port: 'out', to: 'n_archiv', color: '#b91c1c', marker: 'arr-false', label: 'INS ARCHIV' },
+
+  // Stage 5 Audit & Archive
+  { id: 'e_done_arch', from: 'n_done', port: 'out', to: 'n_archiv', color: '#15803d', marker: 'arr-true', label: 'AB FOLGETAG', arcX: 6215 },
+  { id: 'e_scan_audit', from: 'n_book_ok', port: 'out', to: 'n_audit', color: '#475569', marker: 'arr-slate', label: 'PROTOKOLL (OK)', route: 'ortho-mid', midX: 5800 },
+  { id: 'e_err_audit', from: 'n_err_wrong', port: 'out', to: 'n_audit', color: '#475569', marker: 'arr-slate', label: 'PROTOKOLL (FEHLER)', route: 'ortho-mid', midX: 5770 }
+];
+
+const SCENARIOS = {
+  happy: {
+    nodes: ['n_wis', 'n_gmail', 'n_switch_cat', 'n_ki_parse', 'n_if_sortiment', 'n_if_sum', 'n_if_exists', 'n_create_load', 'n_tabs', 'n_qr_open', 'n_scan_in', 'n_if_display', 'n_if_order', 'n_if_storno', 'n_if_overfill', 'n_book_ok', 'n_if_complete', 'n_done', 'n_loop', 'n_audit', 'n_archiv'],
+    edges: ['e1', 'e2', 'e3a', 'e4', 'e5_t', 'e6_t', 'e7_f', 'e9', 'e10', 'e11_f', 'e12', 'e13_f', 'e14_t', 'e16_f', 'e18_f', 'e19', 'e20_t', 'e20_f', 'e_loop_back', 'e_done_arch', 'e_scan_audit'],
+    focus: [0, 0, 0.42]
+  },
+  import_err: {
+    nodes: ['n_wis', 'n_gmail', 'n_switch_cat', 'n_ki_parse', 'n_if_sortiment', 'n_if_sum', 'n_if_exists', 'n_if_reset_ok', 'n_err_import'],
+    edges: ['e1', 'e2', 'e3a', 'e4', 'e5_t', 'e5_f', 'e6_t', 'e6_f', 'e7_t', 'e8_f'],
+    focus: [15, 20, 0.66]
+  },
+  scan_err: {
+    nodes: ['n_scan_in', 'n_if_display', 'n_err_display', 'n_if_order', 'n_if_len13', 'n_err_wrong', 'n_if_storno', 'n_if_overfill', 'n_reset_err', 'n_audit'],
+    edges: ['e12', 'e13_t', 'e13_f', 'e14_f', 'e15_t', 'e15_f', 'e18_t', 'e_err1_reset', 'e_err2_reset', 'e_reset_scan', 'e_err_audit'],
+    focus: [3240, 10, 0.56]
+  },
+  fehlmenge: {
+    nodes: ['n_wis', 'n_gmail', 'n_switch_cat', 'n_ki_parse', 'n_if_sortiment', 'n_if_sum', 'n_if_exists', 'n_if_reset_ok', 'n_create_load', 'n_tabs', 'n_qr_open', 'n_btn_fehlmenge'],
+    edges: ['e_qr_fehl', 'e_fehl_wis', 'e1', 'e2', 'e3a', 'e4', 'e5_t', 'e6_t', 'e7_t', 'e8_t', 'e9', 'e10', 'e11_f'],
+    focus: [40, 80, 0.45]
+  },
+  storno_reset: {
+    nodes: ['n_tabs', 'n_qr_open', 'n_btn_offen', 'n_ohne_ean', 'n_scan_in', 'n_if_display', 'n_if_order', 'n_if_storno', 'n_if_storno_lim', 'n_book_ok', 'n_if_complete', 'n_done', 'n_storno_auftr', 'n_archiv'],
+    edges: ['e_qr_offen', 'e_offen_tabs', 'e_qr_ohne_ean', 'e_ohne_ean_book', 'e_tabs_storno', 'e12', 'e13_f', 'e14_t', 'e16_t', 'e17_f', 'e19', 'e20_t', 'e_storno_arch'],
+    focus: [2200, 60, 0.46]
+  }
+};
+
+const nodesLayer = document.getElementById('nodesLayer');
+const wiresSvg = document.getElementById('wires');
+const world = document.getElementById('world');
+const viewport = document.getElementById('viewport');
+
+let scale = 0.56;
+let panX = 16;
+let panY = 20;
+let dragNodesEnabled = false;
+let currentScenario = 'all';
+
+function buildNodes() {
+  nodesLayer.innerHTML = '';
+  NODES.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'node type-' + n.type;
+    el.id = 'node_' + n.id;
+    el.style.left = n.x + 'px';
+    el.style.top = n.y + 'px';
+
+    let portsHtml = '';
+    if (n.ports && n.ports.length) {
+      portsHtml = '<div class="ports-out">' + n.ports.map(p =>
+        `<div class="port-row ${p.cls}" data-port="${p.id}"><span>${p.label}</span><span class="port-dot"></span></div>`
+      ).join('') + '</div>';
+    }
+
+    el.innerHTML = `
+      ${n.hasIn ? '<div class="port-in"></div>' : ''}
+      <div class="node-top">
+        <div class="n-icon">${n.icon}</div>
+        <div>
+          <div class="n-kicker">${n.kicker}</div>
+          <div class="n-title" title="${n.title}">${n.title}</div>
+        </div>
+      </div>
+      <div class="node-body">
+        <div>${n.desc}</div>
+        ${portsHtml}
+      </div>
+    `;
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectNode(n);
+    });
+
+    makeDraggable(el, n);
+    nodesLayer.appendChild(el);
+  });
+}
+
+function getPortCoords(nodeId, portId) {
+  const n = NODES.find(item => item.id === nodeId);
+  const el = document.getElementById('node_' + nodeId);
+  if (!n || !el) return { x: 0, y: 0 };
+
+  if (portId === 'in') {
+    return { x: n.x - 1, y: n.y + el.offsetHeight / 2 };
+  }
+
+  const portRow = el.querySelector(`.port-row[data-port="${portId}"]`);
+  if (portRow) {
+    const y = n.y + portRow.offsetTop + portRow.parentElement.offsetTop + (portRow.offsetHeight / 2);
+    const x = n.x + el.offsetWidth + 3;
+    return { x, y };
+  }
+  return { x: n.x + el.offsetWidth, y: n.y + el.offsetHeight / 2 };
+}
+
+function rectsOverlap(a, b, pad) {
+  return !(
+    a.x + a.w + pad <= b.x ||
+    b.x + b.w + pad <= a.x ||
+    a.y + a.h + pad <= b.y ||
+    b.y + b.h + pad <= a.y
+  );
+}
+
+function drawWires() {
+  wiresSvg.querySelectorAll('.wire-group').forEach(g => g.remove());
+
+  // Collect all live node bounding boxes for badge collision avoidance
+  const nodeBoxes = NODES.map(n => {
+    const el = document.getElementById('node_' + n.id);
+    return {
+      x: n.x,
+      y: n.y,
+      w: el ? el.offsetWidth : 244,
+      h: el ? el.offsetHeight : 145
+    };
+  });
+  const placedBadges = [];
+
+  EDGES.forEach(edge => {
+    const p1 = getPortCoords(edge.from, edge.port);
+    const p2 = getPortCoords(edge.to, 'in');
+
+    const t = typeof edge.labelT === 'number' ? edge.labelT : 0.5;
+    let d = '';
+    let lx = p1.x + (p2.x - p1.x) * t;
+    let ly = p1.y + (p2.y - p1.y) * t + (edge.labelDy || 0);
+
+    if (edge.arcY) {
+      const midY = edge.arcY;
+      d = `M ${p1.x} ${p1.y} C ${p1.x + 70} ${p1.y}, ${p1.x + 70} ${midY}, ${(p1.x + p2.x) / 2} ${midY} S ${p2.x - 80} ${midY}, ${p2.x} ${p2.y}`;
+      lx = (p1.x + p2.x) / 2;
+      ly = midY;
+    } else if (edge.arcX) {
+      const mx = edge.arcX;
+      const botY = p2.y + 85;
+      d = `M ${p1.x} ${p1.y} L ${mx - 16} ${p1.y} Q ${mx} ${p1.y} ${mx} ${p1.y + 16} L ${mx} ${botY - 16} Q ${mx} ${botY} ${mx - 16} ${botY} L ${p2.x - 36} ${botY} Q ${p2.x - 52} ${botY} ${p2.x - 52} ${botY - 16} L ${p2.x - 52} ${p2.y + 16} Q ${p2.x - 52} ${p2.y} ${p2.x - 36} ${p2.y} L ${p2.x} ${p2.y}`;
+      lx = mx;
+      ly = (p1.y + p2.y) / 2;
+    } else if (edge.route === 'col-drop') {
+      const outX = p1.x + 28;
+      const midY = (p1.y + p2.y) / 2;
+      const inX = p2.x - 24;
+      d = `M ${p1.x} ${p1.y} L ${outX} ${p1.y} L ${outX} ${midY} L ${inX} ${midY} L ${inX} ${p2.y} L ${p2.x} ${p2.y}`;
+      lx = (outX + inX) / 2;
+      ly = midY;
+    } else if (edge.route === 'ortho-mid') {
+      const mx = edge.midX || (p1.x + p2.x) / 2;
+      d = `M ${p1.x} ${p1.y} C ${mx} ${p1.y}, ${mx} ${p2.y}, ${p2.x} ${p2.y}`;
+      lx = mx;
+      ly = (p1.y + p2.y) / 2;
+    } else {
+      const dx = Math.max(55, Math.abs(p2.x - p1.x) * 0.45);
+      d = `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`;
+    }
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'wire-group');
+    g.setAttribute('data-edge', edge.id);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', 'wire-path');
+    path.setAttribute('stroke', edge.color);
+    path.setAttribute('marker-end', `url(#${edge.marker})`);
+    g.appendChild(path);
+
+    if (edge.label) {
+      const padW = Math.round(edge.label.length * 6.0 + 12);
+      const padH = 17;
+
+      // Automatic collision solver: spiral search around (lx, ly) so badge NEVER overlaps any node or badge
+      let bx = lx - padW / 2;
+      let by = ly - padH / 2;
+      const offsets = [
+        [0, 0], [0, -14], [0, 14], [0, -26], [0, 26],
+        [-22, 0], [22, 0], [-22, -16], [22, -16], [-22, 16], [22, 16],
+        [0, -38], [0, 38], [-38, 0], [38, 0], [0, -52], [0, 52]
+      ];
+      for (let i = 0; i < offsets.length; i++) {
+        const cand = { x: lx - padW / 2 + offsets[i][0], y: ly - padH / 2 + offsets[i][1], w: padW, h: padH };
+        const hitsNode = nodeBoxes.some(nb => rectsOverlap(cand, nb, 4));
+        const hitsBadge = placedBadges.some(pb => rectsOverlap(cand, pb, 4));
+        if (!hitsNode && !hitsBadge) {
+          bx = cand.x;
+          by = cand.y;
+          break;
+        }
+      }
+      placedBadges.push({ x: bx, y: by, w: padW, h: padH });
+
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', bx);
+      rect.setAttribute('y', by);
+      rect.setAttribute('width', padW);
+      rect.setAttribute('height', padH);
+      rect.setAttribute('rx', 4);
+      rect.setAttribute('fill', '#ffffff');
+      rect.setAttribute('stroke', edge.color);
+      rect.setAttribute('stroke-width', '1.3');
+      g.appendChild(rect);
+
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', bx + padW / 2);
+      txt.setAttribute('y', by + 11.8);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('class', 'wire-badge');
+      txt.setAttribute('fill', edge.color);
+      txt.textContent = edge.label;
+      g.appendChild(txt);
+    }
+
+    wiresSvg.appendChild(g);
+  });
+
+  applyScenarioHighlight();
+}
+
+function selectNode(n) {
+  document.querySelectorAll('.node.selected').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('node_' + n.id);
+  if (el) el.classList.add('selected');
+
+  document.getElementById('inspTitle').textContent = n.title;
+  document.getElementById('inspRole').textContent = n.info.role;
+  document.getElementById('inspLogic').textContent = n.info.logic;
+  const scr = document.getElementById('inspScreen');
+  scr.textContent = n.info.screen;
+  scr.className = 'iblock-screen ' + (n.info.screenType || '');
+  document.getElementById('inspExample').textContent = n.info.example;
+}
+
+function applyTransform() {
+  world.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  document.getElementById('zoomPct').textContent = Math.round(scale * 100) + '%';
+}
+
+function setView(x, y, s) {
+  panX = x;
+  panY = y;
+  scale = Math.min(1.4, Math.max(0.24, s));
+  applyTransform();
+}
+
+function focusArea(worldX, worldY, s) {
+  setView(-worldX * s + 26, -worldY * s + 26, s);
+}
+
+function zoomStep(delta) {
+  const rect = viewport.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  const newScale = Math.min(1.4, Math.max(0.24, scale + delta));
+  const ratio = newScale / scale;
+  panX = cx - (cx - panX) * ratio;
+  panY = cy - (cy - panY) * ratio;
+  scale = newScale;
+  applyTransform();
+}
+
+function fitAll() {
+  const rect = viewport.getBoundingClientRect();
+  const worldW = 6280;
+  const worldH = 1180;
+  const s = Math.min((rect.width - 36) / worldW, (rect.height - 36) / worldH);
+  const clamped = Math.min(1.0, Math.max(0.2, s));
+  setView((rect.width - worldW * clamped) / 2, (rect.height - worldH * clamped) / 2, clamped);
+}
+
+let isPanning = false;
+let startX = 0, startY = 0;
+
+viewport.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.node')) return;
+  isPanning = true;
+  viewport.classList.add('panning');
+  startX = e.clientX - panX;
+  startY = e.clientY - panY;
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isPanning) return;
+  panX = e.clientX - startX;
+  panY = e.clientY - startY;
+  applyTransform();
+});
+
+window.addEventListener('mouseup', () => {
+  isPanning = false;
+  viewport.classList.remove('panning');
+});
+
+viewport.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = viewport.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.09 : 0.92;
+  const newScale = Math.min(1.45, Math.max(0.2, scale * factor));
+  const ratio = newScale / scale;
+  panX = mx - (mx - panX) * ratio;
+  panY = my - (my - panY) * ratio;
+  scale = newScale;
+  applyTransform();
+}, { passive: false });
+
+function toggleDragMode() {
+  dragNodesEnabled = !dragNodesEnabled;
+  const btn = document.getElementById('dragToggle');
+  btn.textContent = dragNodesEnabled ? 'Karten beweglich' : 'Karten fixiert';
+  btn.classList.toggle('toggle-on', dragNodesEnabled);
+}
+
+const STORAGE_KEY = 'fw_weinscan_node_coords_v31';
+const DEFAULT_COORDS = {};
+NODES.forEach(n => { DEFAULT_COORDS[n.id] = { x: n.x, y: n.y }; });
+
+function loadSavedLayout() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    NODES.forEach(n => {
+      if (saved[n.id] && typeof saved[n.id].x === 'number' && typeof saved[n.id].y === 'number') {
+        n.x = saved[n.id].x;
+        n.y = saved[n.id].y;
+      }
+    });
+  } catch (e) {}
+}
+
+function saveCurrentLayout() {
+  try {
+    const map = {};
+    NODES.forEach(n => { map[n.id] = { x: Math.round(n.x), y: Math.round(n.y) }; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  } catch (e) {}
+}
+
+function resetSavedLayout() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  NODES.forEach(n => {
+    if (DEFAULT_COORDS[n.id]) {
+      n.x = DEFAULT_COORDS[n.id].x;
+      n.y = DEFAULT_COORDS[n.id].y;
+    }
+  });
+  buildNodes();
+  drawWires();
+}
+
+function makeDraggable(el, nodeObj) {
+  let dragging = false, sx = 0, sy = 0, origX = 0, origY = 0;
+  el.addEventListener('mousedown', (e) => {
+    if (!dragNodesEnabled) return;
+    e.stopPropagation();
+    dragging = true;
+    sx = e.clientX;
+    sy = e.clientY;
+    origX = nodeObj.x;
+    origY = nodeObj.y;
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    nodeObj.x = origX + (e.clientX - sx) / scale;
+    nodeObj.y = origY + (e.clientY - sy) / scale;
+    el.style.left = nodeObj.x + 'px';
+    el.style.top = nodeObj.y + 'px';
+    drawWires();
+  });
+  window.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      saveCurrentLayout();
+    }
+  });
+}
+
+function applyScenarioHighlight() {
+  document.querySelectorAll('.node').forEach(el => el.classList.remove('dim', 'hi'));
+  document.querySelectorAll('.wire-path').forEach(p => p.classList.remove('dim', 'active-flow'));
+  document.querySelectorAll('.wire-group').forEach(g => g.style.opacity = '1');
+
+  if (currentScenario === 'all') return;
+  const sc = SCENARIOS[currentScenario];
+  if (!sc) return;
+
+  document.querySelectorAll('.node').forEach(el => {
+    const id = el.id.replace('node_', '');
+    if (sc.nodes.includes(id)) el.classList.add('hi');
+    else el.classList.add('dim');
+  });
+
+  document.querySelectorAll('.wire-group').forEach(g => {
+    const eid = g.getAttribute('data-edge');
+    const path = g.querySelector('.wire-path');
+    if (sc.edges.includes(eid)) {
+      path.classList.add('active-flow');
+    } else {
+      path.classList.add('dim');
+      g.style.opacity = '0.18';
+    }
+  });
+}
+
+document.getElementById('scenarioBar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.sc-btn');
+  if (!btn) return;
+  document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentScenario = btn.dataset.sc;
+  applyScenarioHighlight();
+  if (currentScenario === 'all') {
+    focusArea(15, 10, 0.56);
+  } else if (SCENARIOS[currentScenario]?.focus) {
+    const [fx, fy, fs] = SCENARIOS[currentScenario].focus;
+    focusArea(fx, fy, fs);
+  }
+});
+
+// Initialize
+loadSavedLayout();
+buildNodes();
+drawWires();
+focusArea(0, 10, 0.54);
+selectNode(NODES[0]);
+window.addEventListener('resize', drawWires);
+</script>
+</body>
+</html>
