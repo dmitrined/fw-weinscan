@@ -826,16 +826,20 @@ const NODES = [
   },
   {
     id: 'n_scan_in', x: 3330, y: 285, type: 'trigger', kicker: 'Lager • Pflichtfeld', icon: '🔫',
-    title: '1. Bearbeiter & Barcode-Scan',
-    desc: 'Zuerst eigenes Kürzel eintragen, dann Flasche/Karton/Kiste scannen.',
+    title: '1. Bearbeiter & Knopf „Scannen“',
+    desc: 'Oben Kürzel eintragen, „Scannen“ tippen & durchlaufend scannen.',
+    desc: 'Kürzel eintragen (sofort „In Bearbeitung“), dann durchlaufend scannen.',
     hasIn: true,
     ports: [{ id: 'out', label: 'Barcode prüfen', cls: 'p-ai' }],
     info: {
-      role: 'Startpunkt am Handscanner: Zuerst trägt der Kommissionierer sein Kürzel ein (Pflicht auf gemeinsamen Lager-Geräten), danach wird gescannt.',
-      logic: 'WENN Bearbeiter-Kürzel fehlt -> Sofort rote Warnung „Bitte zuerst Bearbeiter (Kürzel) eintragen!“. Unterstützt Einzelscan, Menge × N und freihändigen Schnell-Scan.',
-      screen: 'Felder: Bearbeiter • Modus • Scan-Art • Barcode',
+      role: 'Einheitlicher Startpunkt am Handgerät: Zuerst trägt der Kommissionierer sein Kürzel bei „Bearbeiter“ ein, danach erscheint der einzige Knopf „Scannen“.',
+      logic: 'WENN Bearbeiter-Kürzel fehlt -> Orange Hinweiszeile „Bitte zuerst Bearbeiter (Kürzel) eintragen!“ und der Knopf bleibt gesperrt. In der Scan-Maske stehen Einzel (1×), Menge (× N) und Storno gemeinsam bereit — inkl. offener Restpositionen.',
+      screen: 'Bearbeiter → Knopf „Scannen“ → Barcode-Maske',
+      role: 'Einheitlicher Startpunkt am Handgerät: Zuerst trägt der Kommissionierer sein Kürzel bei „Bearbeiter“ ein — der Auftrag wechselt sofort auf „In Bearbeitung“ (für alle sichtbar belegt) und der einzige Knopf „Scannen“ erscheint.',
+      logic: 'WENN Bearbeiter-Kürzel fehlt -> Orange Hinweiszeile und der Scan-Knopf bleibt gesperrt. In der Scan-Maske stehen Einzel (1×), Menge (× N) und Storno gemeinsam bereit — inkl. offener Restpositionen (z. B. Nr. 28: 34 Fl.).',
+      screen: 'Bearbeiter → Status „In Bearbeitung“ → Knopf „Scannen“',
       screenType: '',
-      example: 'Im Schnell-Scan (Auto) kann der Mitarbeiter Karton für Karton ohne Display-Berührung durchscannen.'
+      example: 'Kamera und Handscanner arbeiten identisch: Ein Scan bucht sofort und hält die Maske direkt für den nächsten Karton offen.'
     }
   },
   {
@@ -858,7 +862,7 @@ const NODES = [
   {
     id: 'n_err_display', x: 3690, y: 515, type: 'stop', kicker: 'Roter Stopp', icon: '🛑',
     title: 'Stopp: Display gesperrt',
-    desc: 'Keine Buchung (0 Fl.). Schnell-Scan stoppt; Protokoll vermerkt Wein.',
+    desc: 'Keine Buchung (0 Fl.). Scannen stoppt; Protokoll vermerkt Wein.',
     hasIn: true,
     ports: [{ id: 'out', label: 'Quittieren', cls: 'p-warn' }],
     info: {
@@ -928,10 +932,10 @@ const NODES = [
     ports: [{ id: 'out', label: 'Quittieren', cls: 'p-warn' }],
     info: {
       role: '100-%-Fehlerschutz (Poka-Yoke): Keine falsche oder überzählige Flasche kann auf den Lieferschein gebucht werden.',
-      logic: 'Menge bleibt unverändert; Schnell-Scan hält an; das Prüfprotokoll dokumentiert den Fehlversuch samt Artikelnamen.',
+      logic: 'Menge bleibt unverändert; die Scan-Maske schließt sich zur Kontrolle; das Prüfprotokoll dokumentiert den Fehlversuch samt Artikelnamen.',
       screen: '⚠️ FEHLER: Artikel nicht im Schein / Überfüllung verboten!',
       screenType: 'err',
-      example: 'Erst nach Bestätigung über „Fehler zurücksetzen“ ist das Scan-Feld wieder frei.'
+      example: 'Erst nach Bestätigung über „Fehler zurücksetzen“ auf der Auftragskarte kann über „Scannen“ weitergescannt werden.'
     }
   },
   {
@@ -1068,7 +1072,7 @@ const NODES = [
       logic: 'Leert das Barcode-Feld und stellt Modus sowie Mengenfaktor wieder auf „Scannen (1×)“.',
       screen: 'Roter Warnbanner verschwindet • Bereit',
       screenType: 'warn',
-      example: 'Verhindert, dass im Schnell-Scan bei einem Fehler blind weitergescannt wird.'
+      example: 'Verhindert, dass bei einem Fehler blind weitergescannt wird — Rücksprung erst auf die Auftragskarte mit allen Positionen.'
     }
   },
 
@@ -1088,17 +1092,17 @@ const NODES = [
     }
   },
   {
-    id: 'n_loop', x: 5905, y: 290, type: 'ai', kicker: 'Schnell-Scan', icon: '🔄',
+    id: 'n_loop', x: 5905, y: 290, type: 'ai', kicker: 'Auto-Weiter', icon: '🔄',
     title: 'In Bearbeitung & Weiter-Scan',
-    desc: 'Im Auto-Modus öffnet sich sofort das Feld für den nächsten Karton.',
+    desc: 'Das Scan-Fenster öffnet sich sofort automatisch für den nächsten Karton.',
     hasIn: true,
     ports: [{ id: 'out', label: 'Nächster Scan', cls: 'p-ai' }],
     info: {
-      role: 'Sorgt für flüssiges Arbeiten beim Kommissionieren ganzer Paletten.',
-      logic: 'WENN der Auftrag noch unter 100 % steht und kein Fehler vorliegt -> Schnell-Scan-Maske öffnet sich sofort wieder für den nächsten Barcode.',
+      role: 'Sorgt für flüssiges Arbeiten beim Kommissionieren ganzer Paletten ohne unnötige Zwischenklicks.',
+      logic: 'WENN der Auftrag noch unter 100 % steht und kein Fehler vorliegt -> Maske „Scannen“ öffnet sich sofort wieder inkl. aktualisiertem Fortschritt und offenen Restpositionen.',
       screen: 'Bereit für nächsten Barcode-Scan',
       screenType: 'ok',
-      example: 'Mit dem Ring-Scanner am Finger muss das Handgerät beim Packen nicht in die Hand genommen werden.'
+      example: 'Ob Einzelflaschen, Menge × N oder Storno: alles läuft über dieselbe Scan-Maske ohne Moduswechsel zwischen zwei Ansichten.'
     }
   },
   {
@@ -1108,9 +1112,9 @@ const NODES = [
     hasIn: true,
     ports: [],
     info: {
-      role: 'Lückenloser Qualitätsnachweis für das Büro bei Kundenrückfragen.',
+      role: 'Lückenloser Qualitätsnachweis für das Büro bei Kundenrückfragen innerhalb der 14-tägigen Prüffrist.',
       logic: 'Speichert jeden einzelnen Scan mit Uhrzeit, Barcode, Gebindeart, Mengenänderung (+1/+6/+12), Ergebnis (OK / FEHLER / RESET) und Mitarbeiter-Kürzel.',
-      screen: 'Sichtbar für Büro: 14 Tage in App + Tabelle',
+      screen: '14 Tage in App & Tabelle (automatische DSGVO-Bereinigung)',
       screenType: 'ok',
       example: 'Bei Reklamationen sieht das Büro sekundengenau, wann welcher Karton gescannt wurde.'
     }
@@ -1136,9 +1140,9 @@ const NODES = [
     hasIn: true,
     ports: [],
     info: {
-      role: 'Saubere Trennung zwischen aktueller Tagesarbeit im Lager und erledigten Aufträgen für das Büro.',
-      logic: 'Stornierte Scheine wandern sofort ins Archiv, geprüfte Scheine am nächsten Morgen. Reine Leseansicht ohne Scan-Knöpfe.',
-      screen: 'Im Menü unter „Archiv(Lieferscheine)“ (nur Büro)',
+      role: 'Saubere Trennung zwischen aktueller Tagesarbeit im Lager und erledigten Aufträgen der letzten 14 Tage (Langzeitarchiv bleibt führend in commendo WISPremium).',
+      logic: 'Stornierte Scheine wandern sofort ins Archiv, geprüfte Scheine am nächsten Morgen. Nach 14 Tagen werden abgeschlossene Zeilen automatisch DSGVO-konform bereinigt.',
+      screen: 'Im Menü unter „Archiv(Lieferscheine)“ (14 Tage • nur Büro)',
       screenType: '',
       example: 'Hält die Listen auf den Lager-Scannern jeden Morgen schlank und übersichtlich.'
     }
