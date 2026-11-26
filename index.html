@@ -671,7 +671,7 @@
         <ul class="ic-list">
           <li><span class="ic-bullet">⚡</span><span><strong>Kartons fertig berechnet:</strong> Statt „72 Flaschen“ im Kopf umzurechnen, steht sofort da: <strong>6 &times; 12er-Kiste</strong> oder <strong>12 &times; 6er-Karton</strong>.</span></li>
           <li><span class="ic-bullet">⚡</span><span><strong>1 Scan = ganzer Karton:</strong> Ein einziger Scan auf den Karton- oder Kisten-Barcode bucht sofort 6 bzw. 12 Flaschen auf einmal.</span></li>
-          <li><span class="ic-bullet">⚡</span><span><strong>Sonderwünsche in Orange:</strong> Hinweise wie <strong>📦 Schmuckkarton</strong> stechen sofort ins Auge.</span></li>
+          <li><span class="ic-bullet">⚡</span><span><strong>Wichtige Hinweise sofort sichtbar:</strong> Tour- und Lieferhinweise aus dem Büro stehen direkt oben beim Auftrag.</span></li>
         </ul>
         <div class="ic-highlight">
           🎯 Ergebnis: Schnelleres Kommissionieren, auch wenn viel los ist.
@@ -779,7 +779,7 @@
         </div>
         <ul class="ic-list">
           <li><span class="ic-bullet">🔫</span><span><strong>Praxis-Test beim Packen:</strong> Kommissioniert die Test-Aufträge mit dem Scanner (Flaschen, 6er-Kartons, 12er-Kisten).</span></li>
-          <li><span class="ic-bullet">🛠️</span><span><strong>Alltagstauglichkeit prüfen:</strong> Testet auch Sonderfälle wie <em>Fehlbestand</em>, <em>Schmuckkarton</em> oder <em>Fasswein ohne Barcode</em>.</span></li>
+          <li><span class="ic-bullet">🛠️</span><span><strong>Alltagstauglichkeit prüfen:</strong> Testet auch Sonderfälle wie <em>Fehlbestand</em> oder <em>Artikel ohne Barcode (z. B. Fasswein)</em>.</span></li>
           <li><span class="ic-bullet">💬</span><span><strong>Direkte Rückmeldung:</strong> Was ist super? Wo soll ein Knopf oder Text noch angepasst werden?</span></li>
         </ul>
         <div class="ic-highlight">
@@ -848,12 +848,12 @@ const CARDS = [
   {
     id: 'c2', x: 365, y: 65, w: 280, type: 't-auto',
     icon: '⚙️', kicker: 'Schritt 2 • Automatik (DSGVO)', title: 'Sortierung & Karton-Rechner',
-    desc: 'Erkennt automatisch den Bereich, rechnet Flaschen in Kartons/Kisten um und hebt Hinweise hervor.',
+    desc: 'Erkennt automatisch den Bereich und rechnet alle Flaschen fertig in Kartons und Kisten um.',
     pills: [
       { text: 'Zufuhr • Abholung • Post • Spedition', cls: 'teal' },
-      { text: '📦 Schmuckkarton in Orange', cls: 'warn' }
+      { text: 'Kartons & Kisten fertig berechnet', cls: 'green' }
     ],
-    speech: '„Das System sortiert den Schein automatisch in Zufuhr, Abholung, Post oder Spedition, rechnet alle 6er-Kartons und 12er-Kisten aus und markiert Schmuckkartons in Orange.“',
+    speech: '„Das System sortiert den Schein automatisch in Zufuhr, Abholung, Post oder Spedition und rechnet für jede Position alle 6er-Kartons und 12er-Kisten fertig aus.“',
     example: '📦 72 Flaschen → zeigt sofort: 4 × 12er-Kiste + 4 × 6er-Karton.'
   },
   {
@@ -925,7 +925,7 @@ const WIRES = [
   { id: 'w6_back', from: 'c6', to: 'c3', fromSide: 'top-left', toSide: 'bottom-right', color: '#b45309', marker: 'm-warn', label: 'Korrigieren & weiter', dashed: true },
 
   // Special cases branch: c2 (bottom) -> c7 (top-left) -> c3 (bottom-left)
-  { id: 'w2_sonder', from: 'c2', to: 'c7', fromSide: 'bottom', toSide: 'top-left', color: '#b45309', marker: 'm-warn', label: 'Neues PDF / Hinweise 📦', dashed: true },
+  { id: 'w2_sonder', from: 'c2', to: 'c7', fromSide: 'bottom', toSide: 'top-left', color: '#b45309', marker: 'm-warn', label: 'Neues PDF / Ausnahmen', dashed: true },
   { id: 'w7_lager', from: 'c7', to: 'c3', fromSide: 'top-right', toSide: 'bottom-left', color: '#0f766e', marker: 'm-teal', label: 'Im Lager prüfen', dashed: true }
 ];
 
